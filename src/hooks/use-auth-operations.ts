@@ -14,13 +14,11 @@ const useAuthOperations = () => {
   const navigate = useNavigate();
 
   async function login(accessToken: string, refreshToken: string) {
-    console.log("login called with tokens", { accessToken, refreshToken });
-    await setSetting(TOKEN, accessToken);
-    await setSetting(REFRESH_TOKEN, refreshToken);
     const token = jwtDecode<Record<string, string>>(accessToken);
     await setSetting(USER_NAME, token[CLAIM_USER_NAME] ?? "");
     await setSetting(SHOP_ID, String(token[CLAIM_ALLOWED_LOCATIONS] ?? ""));
-
+    localStorage.setItem(REFRESH_TOKEN, refreshToken ?? "");
+    localStorage.setItem(TOKEN, accessToken ?? "");
     navigate("/dashboard");
   }
 

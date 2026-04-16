@@ -9,3 +9,5 @@ export const CLAIM_ALLOWED_LOCATIONS = "allowedlocations";
 
 export const ROLE_ADMIN = "ADMIN";
 export const ROLE_SHOP_USER = "SHOP_USER";
+
+export const SYNC_PRODUCTS_LAST_CHANGE_ID = "sync-products-last-change-id";

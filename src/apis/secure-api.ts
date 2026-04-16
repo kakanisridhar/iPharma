@@ -1,5 +1,4 @@
 import axios from "axios";
-import Cookie from "js-cookie";
 import { REFRESH_TOKEN, TOKEN } from "@/config/vars";
 
 const secureApi = axios.create({
@@ -12,13 +11,13 @@ const secureApi = axios.create({
 
 secureApi.interceptors.request.use(
   function (config) {
-    const token = Cookie.get(TOKEN);
+    const token = localStorage.getItem(TOKEN);
     config.headers.Authorization = token ? `Bearer ${token}` : "";
     return config;
   },
   function (error) {
     return Promise.reject(error);
-  }
+  },
 );
 
 secureApi.interceptors.response.use(
@@ -26,6 +25,7 @@ secureApi.interceptors.response.use(
     return response;
   }, // Directly return successful responses.
   async (error) => {
+    console.error("Error response from server:", JSON.stringify(error));
     const originalRequest = error.config;
     if (
       error.response &&
@@ -35,9 +35,9 @@ secureApi.interceptors.response.use(
       originalRequest._retry = true; // Mark the request as retried to avoid infinite loops.
       try {
         console.log(
-          "access token expired , getting new one using refresh token"
+          "access token expired , getting new one using refresh token",
         );
-        const refreshToken = Cookie.get(REFRESH_TOKEN); // Retrieve the stored refresh token.
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN); // Retrieve the stored refresh token.
         // Make a request to your auth server to refresh the token.
         const response = await axios.post(
           import.meta.env.VITE_APP_URL + "/auth/refresh_token",
@@ -46,23 +46,22 @@ secureApi.interceptors.response.use(
             headers: {
               Authorization: `Bearer ${refreshToken}`,
             },
-          }
+          },
         );
         const { access_token: accessToken, refresh_token: newRefreshToken } =
           response.data;
         // Store the new access and refresh tokens.
-        Cookie.set(TOKEN, accessToken);
-        Cookie.set(REFRESH_TOKEN, newRefreshToken);
+        localStorage.setItem(TOKEN, accessToken);
+        localStorage.setItem(REFRESH_TOKEN, newRefreshToken);
         // Update the authorization header with the new access token.
-        secureApi.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${accessToken}`;
+        secureApi.defaults.headers.common["Authorization"] =
+          `Bearer ${accessToken}`;
         return secureApi(originalRequest); // Retry the original request with the new access token.
       } catch (refreshError) {
         // Handle refresh token errors by clearing stored tokens and redirecting to the login page.
         console.error("Token refresh failed:", refreshError);
-        Cookie.remove(TOKEN);
-        Cookie.remove(REFRESH_TOKEN);
+        localStorage.removeItem(TOKEN);
+        localStorage.removeItem(REFRESH_TOKEN);
         window.location.href = "#/login";
         return Promise.reject(refreshError);
       }
@@ -70,7 +69,7 @@ secureApi.interceptors.response.use(
       console.log("Error from server");
     }
     return Promise.reject(error); // For all other errors, return the error as is.
-  }
+  },
 );
 
 export default secureApi;

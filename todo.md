@@ -25,7 +25,8 @@ POST /api/sales/returns
 
 ## UI
 
-Login - set token details in settings.json
+Login - set token details in settings - db ,
+
 Admin - sync product definitions, sync sales and inventory , Purge DB, Reset Terminal
 
 Sales - Sales, Returns, Publish Sales

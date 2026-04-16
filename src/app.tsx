@@ -1,6 +1,6 @@
 import { RouterProvider } from "react-router";
 import router from "./config/routes";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { getDb } from "./lib/db";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/sonner";
@@ -9,7 +9,7 @@ export default function App() {
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     getDb()
       .then(() => setDbReady(true))
       .catch((err) =>
