@@ -3,7 +3,12 @@ import {
   syncProducts as apiSyncProducts,
   syncProductsFull,
 } from "@/apis/services/product";
-import { getSetting, syncProducts as dbSyncProducts } from "@/lib/db/index";
+import { syncInventory as apiSyncInventory } from "@/apis/services/inventory";
+import {
+  getSetting,
+  syncProducts as dbSyncProducts,
+  syncInventoryCounts as dbSyncInventoryCounts,
+} from "@/lib/db/index";
 import { SYNC_PRODUCTS_LAST_CHANGE_ID, TOKEN } from "@/config/vars";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +24,9 @@ import {
   RefreshCw,
   AlertCircle,
   Package,
-  BarChart2,
   Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import normalApi from "@/apis/normal-api";
 
 type SyncStatus = "idle" | "running" | "success" | "error";
 
@@ -37,8 +40,9 @@ interface SyncResult {
 
 const initialResult: SyncResult = { status: "idle", message: "" };
 
-export function Sync() {
+export function ImportMetaData() {
   const [products, setProducts] = useState<SyncResult>(initialResult);
+  const [inventory, setInventory] = useState<SyncResult>(initialResult);
 
   async function handleSyncProducts() {
     setProducts({
@@ -92,10 +96,43 @@ export function Sync() {
     }
   }
 
+  async function handleSyncInventoryCounts() {
+    setInventory({
+      status: "running",
+      message: "Fetching inventory from server…",
+    });
+
+    try {
+      const counts = await apiSyncInventory();
+      const count = counts.length;
+
+      setInventory((prev) => ({
+        ...prev,
+        message: `Saving ${count} inventory record(s) to local database…`,
+      }));
+
+      await dbSyncInventoryCounts(counts);
+
+      setInventory({
+        status: "success",
+        message: `Successfully synced ${count} inventory record(s).`,
+        count,
+        syncType: "full",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      setInventory({
+        status: "error",
+        message: "Inventory sync failed. See details below.",
+        errorDetail: detail,
+      });
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageTitle
-        title="Sync"
+        title="Import data from server"
         desc="Keep your local data in sync with the server."
       />
 
@@ -104,7 +141,7 @@ export function Sync() {
         <SyncCard
           icon={<Package className="size-4" />}
           title="Products"
-          description="Sync product catalogue and batch information."
+          description="Import new and updated products from the server."
           result={products}
           onSync={handleSyncProducts}
         />
@@ -113,20 +150,9 @@ export function Sync() {
         <SyncCard
           icon={<Layers className="size-4" />}
           title="Inventory Counts"
-          description="Sync stock quantities across all locations."
-          result={initialResult}
-          onSync={undefined}
-          comingSoon
-        />
-
-        {/* Sales — coming soon */}
-        <SyncCard
-          icon={<BarChart2 className="size-4" />}
-          title="Sales"
-          description="Upload offline sales transactions to the server."
-          result={initialResult}
-          onSync={undefined}
-          comingSoon
+          description="Reset local inventory counts to match the server. (This will overwrite any local changes.)"
+          result={inventory}
+          onSync={handleSyncInventoryCounts}
         />
       </div>
     </div>
@@ -139,17 +165,9 @@ interface SyncCardProps {
   description: string;
   result: SyncResult;
   onSync: (() => void) | undefined;
-  comingSoon?: boolean;
 }
 
-function SyncCard({
-  icon,
-  title,
-  description,
-  result,
-  onSync,
-  comingSoon = false,
-}: SyncCardProps) {
+function SyncCard({ icon, title, description, result, onSync }: SyncCardProps) {
   const isRunning = result.status === "running";
 
   return (
@@ -160,11 +178,6 @@ function SyncCard({
             <span className="text-muted-foreground">{icon}</span>
             <CardTitle>{title}</CardTitle>
           </div>
-          {comingSoon && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[0.625rem] font-medium text-muted-foreground">
-              Coming soon
-            </span>
-          )}
         </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
@@ -176,7 +189,7 @@ function SyncCard({
         {/* Action */}
         <Button
           onClick={onSync}
-          disabled={isRunning || comingSoon}
+          disabled={isRunning}
           className="w-full"
           variant={result.status === "error" ? "destructive" : "default"}
         >
@@ -194,11 +207,7 @@ function SyncCard({
 
 function StatusArea({ result }: { result: SyncResult }) {
   if (result.status === "idle") {
-    return (
-      <p className="text-xs text-muted-foreground">
-        Not synced yet. Press <strong>Sync Now</strong> to start.
-      </p>
-    );
+    return null;
   }
 
   if (result.status === "running") {

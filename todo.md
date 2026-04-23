@@ -27,7 +27,7 @@ POST /api/sales/returns
 
 Login - set token details in settings - db ,
 
-Admin - sync product definitions, sync sales and inventory , Purge DB, Reset Terminal
+Admin - sync product definitions, inventory , sync sales , Purge DB, Reset Terminal
 
 Sales - Sales, Returns, Publish Sales
 Inventory - View, Update, Publish Inventory updates

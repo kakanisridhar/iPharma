@@ -1,6 +1,13 @@
 import { redirect } from "react-router";
 import { AppLayout } from "@/layouts/toplevelnav/app-layout";
-import { Login, Dashboard, Error404, GenericError, Sync } from "@/pages";
+import {
+  Login,
+  Dashboard,
+  Error404,
+  GenericError,
+  ImportMetaData,
+  SalesNew,
+} from "@/pages";
 import { getSetting } from "@/lib/db";
 import { createHashRouter } from "react-router";
 import { USER_NAME } from "./vars";
@@ -26,8 +33,12 @@ const router = createHashRouter([
         Component: Dashboard,
       },
       {
-        path: "/admin/sync",
-        Component: Sync,
+        path: "/admin/import",
+        Component: ImportMetaData,
+      },
+      {
+        path: "/sales/new",
+        Component: SalesNew,
       },
       {
         path: "*",

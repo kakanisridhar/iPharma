@@ -75,8 +75,8 @@ export const shopUserMenu: MenuType = [
     title: "Admin",
     subMenu: [
       {
-        title: "Sync",
-        url: "/admin/sync",
+        title: "Import Data",
+        url: "/admin/import",
       },
     ],
   },

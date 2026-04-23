@@ -14,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/common/logo";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { getSetting } from "@/lib/db";
+import { USER_NAME } from "@/config/vars";
 
 function validateField(
   schema: v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
@@ -34,6 +37,7 @@ const passwordSchema = v.pipe(
 
 export function Login() {
   const { login } = useAuthOperations();
+  const [savedUsername, setSavedUsername] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -43,8 +47,8 @@ export function Login() {
     onSubmit: async ({ value }) => {
       try {
         const { data } = await loginToServer(value);
-        toast.success("Login successful!");
         await login(data?.access_token, data?.refresh_token);
+        toast.success("Login successful!");
       } catch (err: unknown) {
         const message =
           (err as any)?.response?.data?.message ??
@@ -53,6 +57,15 @@ export function Login() {
       }
     },
   });
+
+  useEffect(() => {
+    getSetting(USER_NAME).then((val) => {
+      if (val) {
+        setSavedUsername(val);
+        form.setFieldValue("username", val);
+      }
+    });
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -101,6 +114,7 @@ export function Login() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       placeholder="Enter your username"
                       autoComplete="username"
+                      readOnly={!!savedUsername}
                       aria-invalid={
                         field.state.meta.isTouched &&
                         field.state.meta.errors.length > 0
